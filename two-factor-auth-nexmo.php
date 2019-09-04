@@ -40,6 +40,8 @@ define( 'TWO_FACTOR_AUTH_NEXMO_KEY', '' );
 define( 'TWO_FACTOR_AUTH_NEXMO_SECRET', '' );
 
 
+require_once plugin_dir_path( __FILE__ ) . 'vendor/autoload.php';
+	
 
 /**
  * The code that runs during plugin activation.
