@@ -22,24 +22,11 @@
  */
 class Two_Factor_Auth_Nexmo_Public {
 
-	/**
-	 * The ID of this plugin.
-	 *
-	 * @since    1.0.0
-	 * @access   private
-	 * @var      string    $plugin_name    The ID of this plugin.
-	 */
-	private $plugin_name;
+	
+	protected $nexmo_client;
+	protected $settings;
 
-	/**
-	 * The version of this plugin.
-	 *
-	 * @since    1.0.0
-	 * @access   private
-	 * @var      string    $version    The current version of this plugin.
-	 */
-	private $version;
-
+	
 	/**
 	 * Initialize the class and set its properties.
 	 *
@@ -48,11 +35,127 @@ class Two_Factor_Auth_Nexmo_Public {
 	 * @param      string    $version    The version of this plugin.
 	 */
 	public function __construct( $plugin_name, $version ) {
-
-		$this->plugin_name = $plugin_name;
-		$this->version = $version;
-
+		if($this->api_keys_set()){
+			$this->settings = get_option( 'two_factor_auth_nexmo_settings' );
+			$basic  = new \Nexmo\Client\Credentials\Basic($this->settings['api_key'], $this->settings['api_secret']);
+			$this->nexmo_client = new \Nexmo\Client(new \Nexmo\Client\Credentials\Container($basic));
+		}
+		
+		add_action( 'authenticate', array( $this, 'intercept_login_with_two_factor_auth' ), 10, 3 );
 	}
+
+	public function intercept_login_with_two_factor_auth( $user, $username, $password ) {
+		$errors = array();
+		$redirect_to = isset( $_POST['redirect_to'] ) ? $_POST['redirect_to'] : admin_url();
+		$remember_me = ( isset( $_POST['rememberme'] ) && $_POST['rememberme'] === 'forever' ) ? true : false;
+		$_user = get_user_by( 'login', $username );
+
+		if ( ! $this->api_keys_set() ) {
+			return $user;
+		}
+		
+		$nexmo_pin_code = isset( $_POST['two_factor_auth_nexmo_pin_code'] ) ? $_POST['two_factor_auth_nexmo_pin_code'] : false;
+		$nexmo_request_id = isset( $_POST['two_factor_auth_nexmo_request_id'] ) ? $_POST['two_factor_auth_nexmo_request_id'] : false;
+
+			
+
+		if ( $nexmo_request_id && $nexmo_pin_code ) {
+			
+			$verification = new \Nexmo\Verify\Verification($nexmo_request_id);
+			// Add try catch
+			try {
+				$result = $this->nexmo_client->verify()->check($verification, $nexmo_pin_code);
+				$response = $result->getResponseData();
+				if ($response['status']  == "0") {
+					wp_set_auth_cookie( $_user->ID, $remember_me );
+					wp_safe_redirect( $redirect_to );
+					exit;
+				}
+			}
+			catch(Exception $e) {
+				// handle invalid pin code
+				if ($e->getCode() == 16){
+					$errors = array( "Invalid PIN code" );
+				}
+				$this->two_factor_auth_page( $_user, $redirect_to, $remember_me,$errors );
+			}
+		}
+
+		if ( is_null( $user ) ) {
+			// remove default authentication
+			remove_action( 'authenticate', 'wp_authenticate_username_password', 20 );
+			$user = wp_authenticate_username_password( null, $username, $password );
+		}
+		if ( is_a( $user, 'WP_User' ) ) {
+			$this->two_factor_auth_page( $user, $redirect_to, $remember_me );
+		}
+
+		return $user;
+	}
+
+	private function two_factor_auth_page( WP_User $user, $redirect_to, $remember_me, $errors = array() ) {
+		
+		$enabled_2fa = get_user_meta($user->ID, 'two_factor_auth_nexmo_enabled', true );
+		$mobile = get_user_meta($user->ID, 'two_factor_auth_nexmo_mobile', true );
+		$saved_request_id = get_user_meta($user->ID, 'two_factor_auth_nexmo_request_id', true );
+		
+		if ( ! $mobile || ! $enabled_2fa || !$this->api_keys_set()) {
+			return;
+		}
+
+		try {
+			$verification = new \Nexmo\Verify\Verification($mobile, $this->settings['sender_name']);
+			$this->nexmo_client->verify()->start($verification);
+		}
+		catch(Exception $e) {
+			// if concurrent request, cancel current
+			// if ($e->getCode() == 10 && $saved_request_id){
+			
+			// }
+		}
+		
+
+		$request_id = $verification->getRequestId();
+		update_user_meta( $user->ID, 'two_factor_auth_nexmo_request_id', $request_id);
+		
+		wp_logout();
+		// do not cache page
+		nocache_headers();
+		header('Content-Type: ' . get_bloginfo( 'html_type' ) . '; charset=' . get_bloginfo( 'charset' ) );
+		login_header('Nexmo Two-Factor Authentication', '<p class="message">' . sprintf( 'Enter the PIN code sent to your mobile number ending in <strong>%1$s</strong>' , substr($mobile, -5) ) . '</p>');
+
+		if(!empty($errors)) { 
+	?>
+			<div id="login_error"><?php echo implode( '<br />', $errors ) ?></div>
+		<?php  } ?>
+
+		<form name="loginform" id="loginform" action="<?php echo esc_url( site_url( 'wp-login.php', 'login_post' ) ) ?>" method="post" autocomplete="off">
+			<p>
+				<label for="two_factor_auth_nexmo_pin_code">PIN code
+					<br />
+					<input type="number" name="two_factor_auth_nexmo_pin_code" id="two_factor_auth_nexmo_pin_code" class="input" value="" size="6" />
+				</label>
+			</p>
+			<p class="submit">
+				<input type="submit" name="wp-submit" id="wp-submit" class="button button-primary button-large" value="Verify" />
+				<input type="hidden" name="log" value="<?php echo esc_attr( $user->user_login ) ?>" />
+				<input type="hidden" name="two_factor_auth_nexmo_request_id" value="<?php echo esc_attr( $request_id ) ?>" />
+				<input type="hidden" name="redirect_to" value="<?php echo esc_attr( $redirect_to ) ?>" />
+
+				<?php if ( $remember_me ) : ?>
+					<input type="hidden" name="rememberme" value="forever" />
+				<?php endif; ?>
+			</p>
+		</form>
+
+		<?php 
+		
+		login_footer( 'two_factor_auth_nexmo_pin_code' );
+
+		exit;
+	}
+	
+
 
 	/**
 	 * Register the stylesheets for the public-facing side of the site.
@@ -99,5 +202,9 @@ class Two_Factor_Auth_Nexmo_Public {
 		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/two-factor-auth-nexmo-public.js', array( 'jquery' ), $this->version, false );
 
 	}
-
+	public function api_keys_set() {
+		$settings = get_option( 'two_factor_auth_nexmo_settings' );
+		return $settings['api_key'] && $settings['api_secret'] ? true : false;
+	
+	}
 }

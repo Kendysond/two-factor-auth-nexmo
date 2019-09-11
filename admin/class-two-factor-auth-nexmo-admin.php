@@ -73,6 +73,7 @@ class Two_Factor_Auth_Nexmo_Admin {
 	
 	
 	public function nexmo_api_keys_settings_page() {
+		$settings = get_option('two_factor_auth_nexmo_settings');
 		?>
 			<div>
 			<h2>Nexmo Two-Factor Authentication Settings</h2>
@@ -81,11 +82,16 @@ class Two_Factor_Auth_Nexmo_Admin {
 			<table>
 				<tr valign="top">
 					<th scope="row"><label for="two_factor_auth_nexmo_api_key">API Key</label></th>
-					<td><input type="text" id="two_factor_auth_nexmo_api_key" name="two_factor_auth_nexmo_settings[api_key]" value="<?php echo get_option('two_factor_auth_nexmo_settings')['api_key']; ?>" /></td>
+					<td><input required type="text" id="two_factor_auth_nexmo_api_key" name="two_factor_auth_nexmo_settings[api_key]" value="<?php echo esc_attr( isset( $settings['api_key'] ) ? esc_attr( $settings['api_key']) : '' ) ?>" /></td>
 				</tr>
 				<tr valign="top">
 					<th scope="row"><label for="two_factor_auth_nexmo_api_secret">API Secret</label></th>
-					<td><input type="text" id="two_factor_auth_nexmo_api_secret" name="two_factor_auth_nexmo_settings[api_secret]" value="<?php echo get_option('two_factor_auth_nexmo_settings')['api_secret']; ?>" /></td>
+					<td><input required type="text" id="two_factor_auth_nexmo_api_secret" name="two_factor_auth_nexmo_settings[api_secret]" value="<?php echo esc_attr( isset( $settings['api_secret'] ) ? esc_attr( $settings['api_secret']) : '' ) ?>" /></td>
+				</tr>
+
+				<tr valign="top">
+					<th scope="row"><label for="two_factor_auth_nexmo_sender_name">SMS Sender Name</label></th>
+					<td><input required  type="text" id="two_factor_auth_nexmo_sender_name" name="two_factor_auth_nexmo_settings[sender_name]" value="<?php echo esc_attr( isset( $settings['sender_name'] ) ? esc_attr( $settings['sender_name']) : '' ) ?>" /></td>
 				</tr>
 			</table>
 			<?php  submit_button(); ?>
@@ -108,7 +114,7 @@ class Two_Factor_Auth_Nexmo_Admin {
 				<th><label for="two_factor_auth_nexmo_mobile"><?php _e("Mobile Number"); ?></label></th>
 				<td>
 					<input type="text" name="two_factor_auth_nexmo_mobile" id="two_factor_auth_nexmo_mobile" value="<?php echo esc_attr( get_the_author_meta( 'two_factor_auth_nexmo_mobile', $user->ID ) ); ?>" class="regular-text" /><br />
-					<span class="description"><?php _e("Please enter your mobile number with the full country code, e.g +971XXXXXXX."); ?></span>
+					<span class="description"><?php _e("Please enter your mobile number with the full country code, e.g 971XXXXXXX."); ?></span>
 				</td>
 			</tr>
 			
