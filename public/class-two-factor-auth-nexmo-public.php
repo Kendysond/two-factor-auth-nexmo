@@ -53,11 +53,13 @@ class Two_Factor_Auth_Nexmo_Public {
 			return $user;
 		}
 		
+		$_user = get_user_by( 'login', $username );
+
+		$saved_request_id =  ($_user) ? get_user_meta($_user->ID, 'two_factor_auth_nexmo_request_id', true ) : null;
 		$nexmo_pin_code = isset( $_POST['two_factor_auth_nexmo_pin_code'] ) ? $_POST['two_factor_auth_nexmo_pin_code'] : false;
 		$nexmo_request_id = isset( $_POST['two_factor_auth_nexmo_request_id'] ) ? $_POST['two_factor_auth_nexmo_request_id'] : false;
-		$_user = get_user_by( 'login', $username );
 		
-		if ( $nexmo_request_id && $nexmo_pin_code ) {
+		if ( $nexmo_request_id && $nexmo_pin_code && $saved_request_id == $nexmo_request_id ) {
 			
 			$verification = new \Nexmo\Verify\Verification($nexmo_request_id);
 			// Add try catch
