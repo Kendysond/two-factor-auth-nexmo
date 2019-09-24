@@ -38,10 +38,10 @@ if ( ! defined( 'WPINC' ) ) {
 define( 'TWO_FACTOR_AUTH_NEXMO_VERSION', '1.0.0' );
 define( 'TWO_FACTOR_AUTH_NEXMO_KEY', '' );
 define( 'TWO_FACTOR_AUTH_NEXMO_SECRET', '' );
+define( 'TWO_FACTOR_AUTH_NEXMO_SENDER_NAME', '' );
 
 
 require_once plugin_dir_path( __FILE__ ) . 'vendor/autoload.php';
-	
 
 /**
  * The code that runs during plugin activation.

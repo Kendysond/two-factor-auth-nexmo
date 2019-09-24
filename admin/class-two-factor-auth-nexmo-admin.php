@@ -51,10 +51,6 @@ class Two_Factor_Auth_Nexmo_Admin {
 		$this->plugin_name = $plugin_name;
 		$this->version = $version;
 
-		add_action( 'admin_menu', array( $this, 'nexmo_api_keys_options_page' ) );
-		add_action( 'admin_init', array( $this, 'register_nexmo_api_keys_settings' ) );
-		
-
 		add_action( 'show_user_profile', array( $this, 'nexmo_user_settings_fields' ) );
 		add_action( 'edit_user_profile', array( $this, 'nexmo_user_settings_fields' ) );
 		add_action( 'user_profile_update_errors', array( $this, 'validate_nexmo_user_settings_fields' ), 10, 3 );
@@ -62,48 +58,7 @@ class Two_Factor_Auth_Nexmo_Admin {
 		add_action( 'edit_user_profile_update', array( $this, 'save_nexmo_user_settings_fields' ) );
 
 	}
-	public function register_nexmo_api_keys_settings(){
-		add_option( 'two_factor_auth_nexmo_settings', '');
-  		register_setting( 'two_factor_auth_nexmo_settings', 'two_factor_auth_nexmo_settings');
-		
-	}
-	public function nexmo_api_keys_options_page() {
-		add_options_page('Nexmo Two-Factor Authentication', 'Nexmo Two-Factor Authentication', 'manage_options', $this->plugin_name, array( $this, 'nexmo_api_keys_settings_page' ) );
-	}
-	
-	
-	public function nexmo_api_keys_settings_page() {
-		$settings = get_option('two_factor_auth_nexmo_settings');
-		?>
-			<div>
-			<h2>Nexmo Two-Factor Authentication Settings</h2>
-			<form method="post" action="options.php">
-			<?php settings_fields( 'two_factor_auth_nexmo_settings' ); ?>
-			<table>
-				<tr valign="top">
-					<th scope="row"><label for="two_factor_auth_nexmo_api_key">API Key</label></th>
-					<td><input required type="text" id="two_factor_auth_nexmo_api_key" name="two_factor_auth_nexmo_settings[api_key]" value="<?php echo esc_attr( isset( $settings['api_key'] ) ? esc_attr( $settings['api_key']) : '' ) ?>" /></td>
-				</tr>
-				<tr valign="top">
-					<th scope="row"><label for="two_factor_auth_nexmo_api_secret">API Secret</label></th>
-					<td><input required type="text" id="two_factor_auth_nexmo_api_secret" name="two_factor_auth_nexmo_settings[api_secret]" value="<?php echo esc_attr( isset( $settings['api_secret'] ) ? esc_attr( $settings['api_secret']) : '' ) ?>" /></td>
-				</tr>
 
-				<tr valign="top">
-					<th scope="row"><label for="two_factor_auth_nexmo_sender_name">SMS Sender Name</label></th>
-					<td><input required  type="text" id="two_factor_auth_nexmo_sender_name" name="two_factor_auth_nexmo_settings[sender_name]" value="<?php echo esc_attr( isset( $settings['sender_name'] ) ? esc_attr( $settings['sender_name']) : '' ) ?>" /></td>
-				</tr>
-			</table>
-			<?php  submit_button(); ?>
-			</form>
-			</div>
-		<?php
-	}
-	/**
-	 * Register the stylesheets for the admin area.
-	 *
-	 * @since    1.0.0
-	 */
 	function nexmo_user_settings_fields( $user ) { 
 
 		?>

@@ -24,8 +24,6 @@ class Two_Factor_Auth_Nexmo_Public {
 
 	
 	protected $nexmo_client;
-	protected $settings;
-
 	
 	/**
 	 * Initialize the class and set its properties.
@@ -35,12 +33,8 @@ class Two_Factor_Auth_Nexmo_Public {
 	 * @param      string    $version    The version of this plugin.
 	 */
 	public function __construct( $plugin_name, $version ) {
-		if($this->api_keys_set()){
-			$this->settings = get_option( 'two_factor_auth_nexmo_settings' );
-			$basic  = new \Nexmo\Client\Credentials\Basic($this->settings['api_key'], $this->settings['api_secret']);
-			$this->nexmo_client = new \Nexmo\Client(new \Nexmo\Client\Credentials\Container($basic));
-		}
-		
+		$basic  = new \Nexmo\Client\Credentials\Basic(TWO_FACTOR_AUTH_NEXMO_KEY, TWO_FACTOR_AUTH_NEXMO_SECRET);
+		$this->nexmo_client = new \Nexmo\Client(new \Nexmo\Client\Credentials\Container($basic));
 		add_action( 'authenticate', array( $this, 'intercept_login_with_two_factor_auth' ), 10, 3 );
 	}
 
@@ -48,10 +42,6 @@ class Two_Factor_Auth_Nexmo_Public {
 		$errors = array();
 		$redirect_to = isset( $_POST['redirect_to'] ) ? $_POST['redirect_to'] : admin_url();
 		$remember_me = ( isset( $_POST['rememberme'] ) && $_POST['rememberme'] === 'forever' ) ? true : false;
-		
-		if ( ! $this->api_keys_set() ) {
-			return $user;
-		}
 		
 		$_user = get_user_by( 'login', $username );
 
@@ -73,7 +63,7 @@ class Two_Factor_Auth_Nexmo_Public {
 				}
 			}
 			catch(Exception $e) {
-				// handle invalid pin code
+				// handle invalid  code
 				if ($e->getCode() == 16){
 					$errors = array( "Invalid PIN code" );
 				}
@@ -94,12 +84,12 @@ class Two_Factor_Auth_Nexmo_Public {
 		$mobile = get_user_meta($user->ID, 'two_factor_auth_nexmo_mobile', true );
 		$saved_request_id = get_user_meta($user->ID, 'two_factor_auth_nexmo_request_id', true );
 		
-		if ( ! $mobile || ! $enabled_2fa || !$this->api_keys_set()) {
+		if ( ! $mobile || ! $enabled_2fa) {
 			return;
 		}
 
 		try {
-			$verification = new \Nexmo\Verify\Verification($mobile, $this->settings['sender_name']);
+			$verification = new \Nexmo\Verify\Verification($mobile, TWO_FACTOR_AUTH_NEXMO_SENDER_NAME);
 			$this->nexmo_client->verify()->start($verification);
 		}
 		catch(Exception $e) {
@@ -123,7 +113,7 @@ class Two_Factor_Auth_Nexmo_Public {
 
 		<form name="loginform" id="loginform" action="<?php echo esc_url( site_url( 'wp-login.php', 'login_post' ) ) ?>" method="post" autocomplete="off">
 			<p>
-				<label for="two_factor_auth_nexmo_pin_code">PIN code
+				<label for="two_factor_auth_nexmo_pin_code">Code
 					<br />
 					<input type="number" name="two_factor_auth_nexmo_pin_code" id="two_factor_auth_nexmo_pin_code" class="input" value="" size="6" />
 				</label>
@@ -149,54 +139,4 @@ class Two_Factor_Auth_Nexmo_Public {
 	
 
 	
-	/**
-	 * Register the stylesheets for the public-facing side of the site.
-	 *
-	 * @since    1.0.0
-	 */
-	public function enqueue_styles() {
-
-		/**
-		 * This function is provided for demonstration purposes only.
-		 *
-		 * An instance of this class should be passed to the run() function
-		 * defined in Two_Factor_Auth_Nexmo_Loader as all of the hooks are defined
-		 * in that particular class.
-		 *
-		 * The Two_Factor_Auth_Nexmo_Loader will then create the relationship
-		 * between the defined hooks and the functions defined in this
-		 * class.
-		 */
-
-		// wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/two-factor-auth-nexmo-public.css', array(), $this->version, 'all' );
-
-	}
-
-	/**
-	 * Register the JavaScript for the public-facing side of the site.
-	 *
-	 * @since    1.0.0
-	 */
-	public function enqueue_scripts() {
-
-		/**
-		 * This function is provided for demonstration purposes only.
-		 *
-		 * An instance of this class should be passed to the run() function
-		 * defined in Two_Factor_Auth_Nexmo_Loader as all of the hooks are defined
-		 * in that particular class.
-		 *
-		 * The Two_Factor_Auth_Nexmo_Loader will then create the relationship
-		 * between the defined hooks and the functions defined in this
-		 * class.
-		 */
-
-		// wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/two-factor-auth-nexmo-public.js', array( 'jquery' ), $this->version, false );
-
-	}
-	public function api_keys_set() {
-		$settings = get_option( 'two_factor_auth_nexmo_settings' );
-		return $settings['api_key'] && $settings['api_secret'] ? true : false;
-	
-	}
 }
