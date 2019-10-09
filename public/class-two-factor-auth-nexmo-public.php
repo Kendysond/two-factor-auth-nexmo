@@ -33,8 +33,7 @@ class Two_Factor_Auth_Nexmo_Public {
 	 * @param      string    $version    The version of this plugin.
 	 */
 	public function __construct( $plugin_name, $version ) {
-		$basic  = new \Nexmo\Client\Credentials\Basic(TWO_FACTOR_AUTH_NEXMO_KEY, TWO_FACTOR_AUTH_NEXMO_SECRET);
-		$this->nexmo_client = new \Nexmo\Client(new \Nexmo\Client\Credentials\Container($basic));
+		$this->nexmo_client = new Nexmo\Client(new Nexmo\Client\Credentials\Basic(TWO_FACTOR_AUTH_NEXMO_KEY, TWO_FACTOR_AUTH_NEXMO_SECRET));
 		add_action( 'authenticate', array( $this, 'intercept_login_with_two_factor_auth' ), 10, 3 );
 	}
 
@@ -63,7 +62,7 @@ class Two_Factor_Auth_Nexmo_Public {
 				}
 			}
 			catch(Exception $e) {
-				// handle invalid  code
+				// handle invalid pin code
 				if ($e->getCode() == 16){
 					$errors = array( "Invalid PIN code" );
 				}
@@ -113,7 +112,7 @@ class Two_Factor_Auth_Nexmo_Public {
 
 		<form name="loginform" id="loginform" action="<?php echo esc_url( site_url( 'wp-login.php', 'login_post' ) ) ?>" method="post" autocomplete="off">
 			<p>
-				<label for="two_factor_auth_nexmo_pin_code">Code
+				<label for="two_factor_auth_nexmo_pin_code">PIN code
 					<br />
 					<input type="number" name="two_factor_auth_nexmo_pin_code" id="two_factor_auth_nexmo_pin_code" class="input" value="" size="6" />
 				</label>
